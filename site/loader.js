@@ -5,6 +5,27 @@ const status = document.getElementById('status');
 const button = document.getElementById('enter');
 const mime = { html: 'text/html', js: 'text/javascript', png: 'image/png', jpg: 'image/jpeg', mp3: 'audio/mpeg', txt: 'text/plain' };
 const decode = value => Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+async function fetchWithTimeout(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60000);
+  try {
+    const response = await fetch(url, { cache: 'default', signal: controller.signal });
+    if (!response.ok) throw Error('resource unavailable');
+    return await response.arrayBuffer();
+  } finally { clearTimeout(timer); }
+}
+async function getPayload(manifest) {
+  const cacheKey = new URL('payload.bin?iv=' + encodeURIComponent(manifest.iv), location.href);
+  let cache;
+  try {
+    cache = await caches.open('encrypted-game-v1');
+    const cached = await cache.match(cacheKey);
+    if (cached) return new Uint8Array(await cached.arrayBuffer());
+  } catch (_) { cache = null; }
+  const payload = new Uint8Array(await fetchWithTimeout('payload.bin'));
+  if (cache) await cache.put(cacheKey, new Response(payload)).catch(() => {});
+  return payload;
+}
 if (Date.now() >= expiresAt) {
   form.querySelector('input').disabled = true;
   button.disabled = true;
@@ -18,13 +39,13 @@ form.addEventListener('submit', async event => {
   event.preventDefault();
   if (Date.now() >= expiresAt) return;
   button.disabled = true;
-  status.textContent = '正在进入…';
+  button.hidden = true;
+  status.textContent = '正在获取资源…';
   try {
     const password = document.getElementById('pass').value;
-    const [manifestResponse, payloadResponse] = await Promise.all([fetch('manifest.json', { cache: 'no-store' }), fetch('payload.bin', { cache: 'no-store' })]);
-    if (!manifestResponse.ok || !payloadResponse.ok) throw Error('resource unavailable');
-    const manifest = await manifestResponse.json();
-    const payload = new Uint8Array(await payloadResponse.arrayBuffer());
+    const manifest = JSON.parse(new TextDecoder().decode(await fetchWithTimeout('manifest.json')));
+    const payload = await getPayload(manifest);
+    status.textContent = '正在启动游戏…';
     const keyBytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
     const key = await crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['decrypt']);
     const tag = decode(manifest.tag);
@@ -47,8 +68,9 @@ form.addEventListener('submit', async event => {
     script.onerror = () => { status.textContent = '试玩加载失败'; };
     document.body.append(script);
   } catch {
-    status.textContent = '链接无效或暂不可用';
+    status.textContent = Date.now() >= expiresAt ? '访问已结束' : '连接未完成，请检查网络后重试';
     button.disabled = false;
+    if (Date.now() < expiresAt) { button.hidden = false; button.textContent = '重试进入'; }
   }
 });
 const linkKey = new URLSearchParams(location.hash.slice(1)).get('k');
@@ -56,4 +78,3 @@ if (linkKey && Date.now() < expiresAt) {
   document.getElementById('pass').value = linkKey;
   form.requestSubmit();
 }
-
