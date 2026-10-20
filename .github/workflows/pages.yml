@@ -1,0 +1,44 @@
+name: Publisher demo Pages
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '29 4 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: prepare
+        shell: bash
+        run: |
+          mkdir _site
+          if [ "$(date -u +%s)" -ge "$(date -u -d '2026-10-27T04:23:18.737Z' +%s)" ]; then
+            printf '%s\n' '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="robots" content="noindex"><title>试玩已结束</title><body style="font-family:sans-serif;text-align:center;padding:15vh 1rem"><h1>发行商试玩期限已结束</h1><p>请联系项目方获取新的试玩授权。</p></body></html>' > _site/index.html
+            echo 'User-agent: *' > _site/robots.txt
+            echo 'Disallow: /' >> _site/robots.txt
+          elif [ "${{ github.event_name }}" = 'schedule' ]; then
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            cp -a site/. _site/
+          fi
+          echo 'publish=true' >> "$GITHUB_OUTPUT"
+      - if: steps.prepare.outputs.publish == 'true'
+        uses: actions/configure-pages@v5
+      - if: steps.prepare.outputs.publish == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - if: steps.prepare.outputs.publish == 'true'
+        id: deploy
+        uses: actions/deploy-pages@v4
+
