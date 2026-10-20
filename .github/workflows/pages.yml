@@ -3,7 +3,8 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '29 4 * * *'
+    - cron: '1,11,21,31,41,51 4 22 10 *'
+    - cron: '17 4 23-24 10 *'
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,7 +22,11 @@ jobs:
         shell: bash
         run: |
           mkdir _site
-          if [ "$(date -u +%s)" -ge "$(date -u -d '2026-10-27T04:23:18.737Z' +%s)" ]; then
+          if [ "${{ github.event_name }}" = 'schedule' ] && [ "$(date -u +%s)" -gt "$(date -u -d '2026-10-24T04:00:00Z' +%s)" ]; then
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$(date -u +%s)" -ge "$(date -u -d '2026-10-22T04:00:00Z' +%s)" ]; then
             printf '%s\n' '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="robots" content="noindex"><title>试玩已结束</title><body style="font-family:sans-serif;text-align:center;padding:15vh 1rem"><h1>发行商试玩期限已结束</h1><p>请联系项目方获取新的试玩授权。</p></body></html>' > _site/index.html
             echo 'User-agent: *' > _site/robots.txt
             echo 'Disallow: /' >> _site/robots.txt
