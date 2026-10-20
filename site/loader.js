@@ -8,17 +8,17 @@ const decode = value => Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_
 if (Date.now() >= expiresAt) {
   form.querySelector('input').disabled = true;
   button.disabled = true;
-  status.textContent = '试玩期限已结束';
+  status.textContent = '访问已结束';
 } else {
   setTimeout(() => {
-    document.body.innerHTML = '<main style="margin:auto;text-align:center;color:#354a37;font-size:18px"><h1>发行商试玩期限已结束</h1><p>请联系项目方获取新的试玩授权。</p></main>';
+    document.body.innerHTML = '<main style="margin:auto;text-align:center;color:#354a37;font-size:18px"><h1>菜头大作战</h1><p>访问已结束</p></main>';
   }, expiresAt - Date.now());
 }
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (Date.now() >= expiresAt) return;
   button.disabled = true;
-  status.textContent = '正在解锁试玩资源…';
+  status.textContent = '正在进入…';
   try {
     const password = document.getElementById('pass').value;
     const [manifestResponse, payloadResponse] = await Promise.all([fetch('manifest.json', { cache: 'no-store' }), fetch('payload.bin', { cache: 'no-store' })]);
@@ -47,7 +47,7 @@ form.addEventListener('submit', async event => {
     script.onerror = () => { status.textContent = '试玩加载失败'; };
     document.body.append(script);
   } catch {
-    status.textContent = '口令错误或资源暂不可用';
+    status.textContent = '链接无效或暂不可用';
     button.disabled = false;
   }
 });
