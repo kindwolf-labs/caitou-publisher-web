@@ -1,0 +1,1 @@
+{"name":"caitou-publisher-secure-demo","private":true,"version":"1.0.0","scripts":{"start":"node server.cjs"}}
