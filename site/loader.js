@@ -9,6 +9,10 @@ if (Date.now() >= expiresAt) {
   form.querySelector('input').disabled = true;
   button.disabled = true;
   status.textContent = '试玩期限已结束';
+} else {
+  setTimeout(() => {
+    document.body.innerHTML = '<main style="margin:auto;text-align:center;color:#354a37;font-size:18px"><h1>发行商试玩期限已结束</h1><p>请联系项目方获取新的试玩授权。</p></main>';
+  }, expiresAt - Date.now());
 }
 form.addEventListener('submit', async event => {
   event.preventDefault();
