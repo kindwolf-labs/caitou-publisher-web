@@ -1,5 +1,5 @@
 'use strict';
-const expiresAt = Date.parse('2026-10-27T04:23:18.737Z');
+const expiresAt = Date.parse('2026-10-22T04:00:00Z');
 const form = document.getElementById('gate');
 const status = document.getElementById('status');
 const button = document.getElementById('enter');
@@ -46,3 +46,9 @@ form.addEventListener('submit', async event => {
     button.disabled = false;
   }
 });
+const linkKey = new URLSearchParams(location.hash.slice(1)).get('k');
+if (linkKey && Date.now() < expiresAt) {
+  document.getElementById('pass').value = linkKey;
+  form.requestSubmit();
+}
+
