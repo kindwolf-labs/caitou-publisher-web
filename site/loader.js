@@ -40,6 +40,7 @@ form.addEventListener('submit', async event => {
     }
     if (!urls['game.bundle.js']) throw Error('missing game');
     window.__publisherAssetUrls = urls;
+    window.__publisherAssetSizes = Object.fromEntries(manifest.files.map(file => [file.path.slice(1), file.bytes]));
     form.remove();
     const script = document.createElement('script');
     script.src = urls['game.bundle.js'];
